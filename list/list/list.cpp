@@ -48,6 +48,7 @@ public:
 		std::cout << "\nprint list end:" << std::endl;
 	}
 
+	//反转链表
 	void Reverse() {
 		node* pCur = m_pHead->pNext; //顺序
 		m_pHead->pNext = nullptr; //重新把顺序节点反向插入head节点后面
@@ -59,7 +60,21 @@ public:
 			InsertNode(m_pHead, singleNode);
 		}
 	}
+	/* 较好的参考
+	ListNode* ReverseList(ListNode* pHead) {
+		ListNode* newh = NULL;
+		for (ListNode* p = pHead; p; )
+		{
+			ListNode* tmp = p -> next;
+			p -> next = newh;
+			newh = p;
+			p = tmp;
+		}
+		return newh;
+	}
+	*/
 
+	//合并两条有序链表(无环)
 	void Merge(mList& srcList) {
 		node* p1 = m_pHead->pNext;
 		node* p2 = srcList.GetHead()->pNext;
@@ -101,6 +116,7 @@ public:
 		}
 	}
 
+	//是否有环
 	node* HasLoop() {
 		node* slow = m_pHead->pNext, *fast = m_pHead->pNext;
 		if (!fast || !fast->pNext) { //必须至少有两个节点
@@ -116,6 +132,7 @@ public:
 		return nullptr;
 	}
 
+	//查找环的入口点
 	node* FindLoopNode(int& ncount) {
 		node* slow = HasLoop();
 		if (!slow) return nullptr;
@@ -124,11 +141,27 @@ public:
 		ncount = 0; //返回从 m_pHead->pNext 节点到环入口节点的距离
 		while (slow != meet) {
 			slow = slow->pNext;
-			meet = meet->pNext->pNext;
+			meet = meet->pNext;
 			ncount++;
 		}
 		return meet;
 	}
+
+	//创建带环的链表, loopCount 是指定第几个节点是环的入口点
+	node* CreateLoop(int loopCount) {
+		node* next = m_pHead;
+		node* loopNode = nullptr;
+		for (int i = 1; i <= 10; i++) {
+			node* pNew = new node(i);
+			next = InsertNode(next, pNew);
+			if (i == loopCount) {
+				loopNode = pNew;
+			}
+		}
+		next->pNext = loopNode;
+		return loopNode;
+	}
+
 	//移除链表的倒数第 rcount 个节点
 	void DelNode(int rcount) {
 		if (rcount <= 0) return;
@@ -175,7 +208,7 @@ public:
 		}
 	}
 
-	//快慢指针的思路,间隔 rcount 个节点
+	//快慢指针的思路,间隔 rcount 个节点(无环链表)
 	void DelNode2(int rcount) {
 		if (rcount <= 0) return;
 
@@ -202,7 +235,7 @@ public:
 		}
 	}
 
-	//快慢指针的思路,间隔 rcount 个节点
+	//快慢指针的思路,间隔 rcount 个节点(无环链表)
 	void DelNode3(int rcount) {
 		node* actNode = m_pHead;
 		node* preDel = actNode;
@@ -223,27 +256,26 @@ public:
 		}
 	}
 
+	//查找链表的中间节点,同理也是快慢指针(注意偶数节点的是找哪个)
+	node* FindMid() {
+		node* slow = m_pHead->pNext, *fast = m_pHead->pNext;
+		int count = 0;
+		while (fast && fast->pNext) {
+			slow = slow->pNext;
+			fast = fast->pNext->pNext;
+		}
+		/*
+		if (!fast) {
+			//偶数个节点
+		} else {
+			//奇数个节点
+		}
+		*/
+		return slow;
+	}
 public:
 	node* m_pHead;
 };
-
-/* 
-struct ListNode { int val; struct ListNode *next; ListNode(int x) : val(x), next(NULL) { } };
-class Solution {
-public: 
-	ListNode* ReverseList(ListNode* pHead) {
-		ListNode* newh = NULL; 
-		for (ListNode* p = pHead; p; )//p为工作指针 
-		{ 
-			ListNode* tmp = p -> next;//temp保存下一个结点 
-			p -> next = newh; 
-			newh = p; 
-			p = tmp; 
-		} 
-		return newh; 
-	}
-};
-*/
 
 
 int main() {
@@ -292,9 +324,45 @@ int main() {
 	std::cout << "after DelNode2:\n";
 	lista.PrintAll();
 
-	lista.DelNode3(2);
-	std::cout << "after DelNode3:\n";
-	lista.PrintAll();
+	//lista.DelNode3(2);
+	//std::cout << "after DelNode3:\n";
+	//lista.PrintAll();
+
+	std::cout << "find middle node:" << std::endl;
+	node* mid = lista.FindMid();
+	if (mid) {
+		std::cout << "middle node:" << mid->m_a << std::endl;
+	}
+
+	std::cout << "build loop list begin:\n";
+	mList listc;
+	listc.Init();
+	node* loopNode = listc.CreateLoop(8);
+	int count = 0;
+	node* start = listc.GetHead()->pNext;
+	while (start) {
+		std::cout << start->m_a << " ";
+		if (start == loopNode) {
+			count++;
+			if (count >= 2) {
+				break;
+			}
+		}
+		start = start->pNext;
+	}
+	std::cout << "\nbuild loop list end" << std::endl;
+
+	node* findFirstMeet = listc.HasLoop();
+	if (findFirstMeet) {
+		std::cout << "first meet node:" << findFirstMeet->m_a << std::endl;
+	}
+
+	count = 0;
+	node* findLoopNode = listc.FindLoopNode(count);
+	if (findLoopNode) {
+		std::cout << "loop entry node:" << findLoopNode->m_a << std::endl;
+		std::cout << "distance between head->next and entry node :" << count << std::endl;
+	}
 	return 0;
 }
 
