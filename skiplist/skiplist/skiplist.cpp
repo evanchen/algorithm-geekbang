@@ -107,10 +107,14 @@ bool SkipList::Delete(int val) {
 	LevelNode* node = FindNode(val, level);
 	if (!node) return false;
 
+	//直至到0级链表
+	while (node->m_down) {
+		node = node->m_down;
+	}
 	//删除0级原始链表的 m_real 节点
 	delete node->m_real;
-	//如果是交叉节点(它的down或者up指针不为空),则需要把它从相关的层级链表里移除
-	//因为是0级链表节点,所以只有up指针不为空即可
+	node->m_real = nullptr;
+	//如果是交叉节点(它的up指针不为空,因为是0级链表节点),则需要把它从相关的层级链表里移除
 	LevelNode* up = node;
 	while (up) {
 		up->m_real = nullptr;
@@ -124,6 +128,7 @@ bool SkipList::Delete(int val) {
 		node = up;
 		up = node->m_up;
 		delete node;
+		node = nullptr;
 	}
 
 	return true;
