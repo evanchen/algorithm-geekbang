@@ -31,7 +31,7 @@ bool SkipList::Init(int level, int span) {
 bool SkipList::Insert(int val) {
 	int level = m_level - 1;
 	//找到起始跨度节点
-	LevelNode* spanNode = Find(val, level);
+	LevelNode* spanNode = FindSpan(val, level); //必然是最底层级的
 	if (!spanNode) return false;
 	LevelNode* preNode = FindInsert(val, spanNode);
 	Node* newReal = new Node(val);
@@ -47,36 +47,47 @@ bool SkipList::Insert(int val) {
 	preNode->m_next = newNode;
 
 	//从下往上更新层级索引
+	LevelNode* newUp = nullptr;
 	while (spanNode) {
-		RebuildIndex(spanNode);
-		spanNode = spanNode->m_up;
+		newUp = BuildIndex(spanNode);
+		if (!newUp) break;
+
+		//由于新建了一个 spanNode 的上层节点, 需要找到 spanNode 的当前层级的起始跨度节点, 再判断是否可以在上一层再建节点
+		while (newUp && !newUp->m_up) {
+			newUp = newUp->m_prev;
+		}
+		spanNode = newUp;
 	}
 	return true;
 }
 
 //计算交叉节点后面到下一个交叉节点(包含)的节点个数
 //当原始链的一个跨度之间(两交叉节点之间)的节点个数 tailNum >= 2*span, 则找到他们中位数节点并将它设置为新的交叉节点
-void SkipList::RebuildIndex(LevelNode* spanNode) {
+LevelNode* SkipList::BuildIndex(LevelNode* spanNode) {
 	int tailNum = 0;
 	LevelNode* slow = spanNode;
 	LevelNode* fast = spanNode;
 	do {
 		fast = fast->m_next;
-		tailNum++;
-		if (tailNum > m_span) {
-			slow = slow->m_next;
+		if (fast && !fast->m_up) {
+			tailNum++;
+			if (tailNum > m_span) {
+				slow = slow->m_next;
+			}
 		}
 	} while (fast && !fast->m_up && fast->m_next);
+	
+	if (!(slow != spanNode && tailNum >= 2 * m_span))
+		return nullptr;
+
 	//已经过半跨度节点了
-	if (slow != spanNode && tailNum >= 2 * m_span) {
-		UpdateIndex(spanNode, slow);
-	}
+	return UpdateIndex(spanNode, slow);
 }
 
 //从下到上更新索引
-void SkipList::UpdateIndex(LevelNode* spanNode, LevelNode* newNode) {
+LevelNode* SkipList::UpdateIndex(LevelNode* spanNode, LevelNode* newSpan) {
 	LevelNode* up = spanNode->m_up;
-	LevelNode* newUp = new LevelNode(newNode->m_real);
+	LevelNode* newUp = new LevelNode(newSpan->m_real);
 	//前后节点链接
 	if (up->m_next) {
 		up->m_next->m_prev = newUp;
@@ -86,8 +97,9 @@ void SkipList::UpdateIndex(LevelNode* spanNode, LevelNode* newNode) {
 	newUp->m_prev = up;
 
 	//上下节点链接
-	newUp->m_down = newNode;
-	newNode->m_up = newUp;
+	newUp->m_down = newSpan;
+	newSpan->m_up = newUp;
+	return newUp;
 }
 
 bool SkipList::Delete(int val) {
@@ -117,7 +129,8 @@ bool SkipList::Delete(int val) {
 	return true;
 }
 
-LevelNode* SkipList::Find(int val, int& level) {
+//从上层到下层查找
+LevelNode* SkipList::FindSpan(int val, int& level) {
 	if (level < 0 || level >= m_level)
 		return nullptr;
 	
@@ -165,18 +178,46 @@ LevelNode* SkipList::Find(int val, int& level) {
 }
 
 LevelNode* SkipList::FindNode(int val, int& level) {
-	LevelNode* res = nullptr;
-	LevelNode* node = Find(val, level);
-	while (node && node->m_next) {
-		if (val == node->m_real->m_val) {
-			res = node;
+	LevelNode* lNode = nullptr;
+	while (level >= 0) {
+		int sLevel = level;
+		lNode = (LevelNode*)m_index[level];
+		while (lNode && lNode->m_next) {
+			if (lNode->m_real->m_val == val) {
+				return lNode;
+			}
+			else if(lNode->m_next->m_real->m_val == val) {
+				return lNode->m_next;
+			}
+			
+			if (val > lNode->m_next->m_real->m_val) {
+				lNode = lNode->m_next;
+			}
+			else {
+				//下沉到下个层级索引
+				if (lNode->m_down) {
+					level--;
+					lNode = lNode->m_down;
+				}
+				else {
+					break;
+				}
+			}
+		}
+		if (level != sLevel) { //在某个 level 层有找到符合的跨度
 			break;
 		}
 		else {
-			node = node->m_next;
+			level--;
 		}
 	}
-	return res;
+	while (lNode) {
+		if (lNode->m_real->m_val == val)
+			return lNode;
+		else
+			lNode = lNode->m_next;
+	}
+	return nullptr;
 }
 
 LevelNode* SkipList::FindInsert(int val, LevelNode* spanNode) {

@@ -39,6 +39,7 @@ public:
 public:
 	//初始化跳表,一共 level 级(含0级)
 	bool Init(int level, int span);
+	int GetMaxLevel() { return m_level; }
 	bool Insert(int val);
 	bool Delete(int val);
 	//找到和 val 相等的0级节点
@@ -46,12 +47,12 @@ public:
 	//找到可以插入 val 的0级节点前驱
 	LevelNode* FindInsert(int val, LevelNode* spanNode);
 
-	void RebuildIndex(LevelNode* spanNode);
-	void UpdateIndex(LevelNode* spanNode, LevelNode* lNode);
+	LevelNode* BuildIndex(LevelNode* spanNode);
+	LevelNode* UpdateIndex(LevelNode* spanNode, LevelNode* lNode);
 	void Print();
 private:
 	//查找 val 所在的跨度区间的起点节点
-	LevelNode* Find(int val, int& level);
+	LevelNode* FindSpan(int val, int& level);
 private:
 	//跳表多级索引, 0级为原始链表
 	List* m_index;
