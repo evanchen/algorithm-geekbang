@@ -7,7 +7,7 @@ int main() {
 	SkipList sl;
 	assert(sl.Init(5,2));
 
-	for (int i = 0; i < 50; i++) {
+	for (int i = 0; i < 15; i++) {
 		sl.Insert(i+1);
 	}
 	sl.Print();
@@ -38,6 +38,16 @@ int main() {
 	sl.Print();
 
 	findNum = 4;
+	std::cout << "insert:" << findNum << std::endl;
+	sl.Insert(findNum);
+	sl.Print();
+
+	findNum = 5;
+	std::cout << "insert:" << findNum << std::endl;
+	sl.Insert(findNum);
+	sl.Print();
+
+	findNum = 6;
 	std::cout << "insert:" << findNum << std::endl;
 	sl.Insert(findNum);
 	sl.Print();

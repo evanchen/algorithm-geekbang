@@ -65,21 +65,27 @@ bool SkipList::Insert(int val) {
 //当原始链的一个跨度之间(两交叉节点之间)的节点个数 tailNum >= 2*span, 则找到他们中位数节点并将它设置为新的交叉节点
 LevelNode* SkipList::BuildIndex(LevelNode* spanNode) {
 	int tailNum = 0;
-	LevelNode* slow = spanNode;
+	LevelNode* slow = nullptr;
 	LevelNode* fast = spanNode;
 	do {
 		fast = fast->m_next;
-		if (fast && !fast->m_up) {
+		if (slow) {
+			slow = slow->m_next;
 			tailNum++;
-			if (tailNum > m_span) {
-				slow = slow->m_next;
-			}
 		}
-	} while (fast && !fast->m_up && fast->m_next);
+		else {
+			tailNum++;
+			if (tailNum >= m_span) {
+				slow = spanNode;
+			} 
+		}
+	} while (fast && !fast->m_up);
 	
-	if (!(slow != spanNode && tailNum >= 2 * m_span))
-		return nullptr;
+	if (!slow || slow == spanNode) return nullptr;
 
+	if (!(tailNum % m_span == 0 || tailNum >= 2 * m_span)) {
+		return nullptr;
+	}
 	//已经过半跨度节点了
 	return UpdateIndex(spanNode, slow);
 }
@@ -161,6 +167,8 @@ LevelNode* SkipList::FindSpan(int val, int& level) {
 				if (spanNode->m_down) {
 					level--;
 					spanNode = spanNode->m_down;
+					lNode = spanNode;
+					continue;
 				}
 				else {
 					break;
